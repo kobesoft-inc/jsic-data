@@ -19,22 +19,22 @@ def main():
 
     print("=== JSIC PDF Parser ===\n")
 
-    # 1. Create PDF reader and load PDF
+    # 1. PDFリーダーを作成してPDFをロード
     pdf_url = "https://www.soumu.go.jp/main_content/000941216.pdf"
     reader = JsicPdfReader(pdf_url)
     print(f"Total pages: {reader.get_total_pages()}")
 
-    # 2. Read table of contents (pages 51-102)
+    # 2. 目次を読み込む（51-102ページ）
     print("\nReading table of contents (pages 51-102)...")
     toc_lines = reader.read_pages(51, 102)
     print(f"Read {len(toc_lines)} lines")
 
-    # 3. Parse index
+    # 3. インデックスをパース
     print("\nParsing index...")
     index_parser = JsicIndexParser()
     index_entries = index_parser.parse_index_lines(toc_lines)
 
-    # Statistics
+    # 統計情報
     major_count = sum(1 for e in index_entries if e.type == "major")
     middle_count = sum(1 for e in index_entries if e.type == "middle")
     minor_count = sum(1 for e in index_entries if e.type == "minor")
@@ -46,19 +46,19 @@ def main():
     print(f"  Minor classifications: {minor_count}")
     print(f"  Detail classifications: {detail_count}")
 
-    # 4. Read detail pages (105-534)
+    # 4. 詳細ページを読み込む（105-534ページ）
     print("\nReading detail pages (105-534)...")
     detail_lines = reader.read_pages(105, 534)
     print(f"Read {len(detail_lines)} lines")
 
-    # 5. Parse detail
+    # 5. 詳細をパース
     print("\nParsing detail...")
     detail_parser = JsicDetailParser()
     detail_entries = detail_parser.parse_detail_pages(detail_lines)
 
     print(f"Parsed {len(detail_entries)} detail entries")
 
-    # 6. Merge Index and Detail parsers results (hierarchical structure)
+    # 6. IndexパーサーとDetailパーサーの結果をマージ（階層構造）
     print("\n=== Merging Index and Detail Results ===")
     builder = JsicHierarchyBuilder(format_type=args.format)
     merged_data = builder.merge_and_build_hierarchy(index_entries, detail_entries)
@@ -79,7 +79,7 @@ def main():
     else:
         print("✓ All codes and names match perfectly!")
 
-    # 7. Export merged data to JSON
+    # 7. マージしたデータをJSONにエクスポート
     print(f"\nExporting merged data to {args.output}...")
 
     with open(args.output, 'w', encoding='utf-8') as f:

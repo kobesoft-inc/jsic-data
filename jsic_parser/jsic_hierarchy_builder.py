@@ -1,5 +1,5 @@
 """
-JSIC Hierarchy Builder - IndexパーサーとDetailパーサーの結果をマージして階層構造を構築
+JSIC階層ビルダー - IndexパーサーとDetailパーサーの結果をマージして階層構造を構築
 """
 from typing import List, Dict, Any
 from .jsic_index_parser import JsicIndexEntry
@@ -43,7 +43,7 @@ class JsicHierarchyBuilder:
 
         for entry in index_entries:
             if entry.type == "major":
-                # 新しいmajor category
+                # 新しい大分類
                 current_major = self._merge_entry(entry, detail_by_code.get(entry.code))
                 current_major['middle_categories'] = []
                 major_categories.append(current_major)
@@ -51,7 +51,7 @@ class JsicHierarchyBuilder:
                 current_minor = None
 
             elif entry.type == "middle":
-                # 新しいmiddle category（現在のmajorに属する）
+                # 新しい中分類（現在の大分類に属する）
                 if current_major is not None:
                     current_middle = self._merge_entry(entry, detail_by_code.get(entry.code))
                     current_middle['minor_categories'] = []
@@ -59,14 +59,14 @@ class JsicHierarchyBuilder:
                     current_minor = None
 
             elif entry.type == "minor":
-                # 新しいminor category（現在のmiddleに属する）
+                # 新しい小分類（現在の中分類に属する）
                 if current_middle is not None:
                     current_minor = self._merge_entry(entry, detail_by_code.get(entry.code))
                     current_minor['detail_categories'] = []
                     current_middle['minor_categories'].append(current_minor)
 
             elif entry.type == "detail":
-                # 新しいdetail category（現在のminorに属する）
+                # 新しい細分類（現在の小分類に属する）
                 if current_minor is not None:
                     detail = self._merge_entry(entry, detail_by_code.get(entry.code))
                     current_minor['detail_categories'].append(detail)
@@ -121,7 +121,7 @@ class JsicHierarchyBuilder:
                     result['excluded_examples'] = detail_entry.excluded_examples
                 return result
         elif index_entry:
-            # Index parserにのみ存在
+            # Indexパーサーにのみ存在
             self.warnings.append({
                 'code': index_entry.code,
                 'type': index_entry.type,
@@ -141,14 +141,14 @@ class JsicHierarchyBuilder:
                     'name_en': index_entry.name_en
                 }
             else:  # full
-                # detailがない場合は、code, name, name_enのみ
+                # Detailがない場合は、code, name, name_enのみ
                 return {
                     'code': index_entry.code,
                     'name': index_entry.name,
                     'name_en': index_entry.name_en
                 }
         else:
-            # Detail parserにのみ存在
+            # Detailパーサーにのみ存在
             self.warnings.append({
                 'code': detail_entry.code,
                 'type': detail_entry.type,

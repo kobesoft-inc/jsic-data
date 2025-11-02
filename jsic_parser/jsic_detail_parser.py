@@ -5,7 +5,7 @@ from typing import List, Optional
 
 @dataclass
 class JsicDetailEntry:
-    """Represents a parsed JSIC detail entry with description."""
+    """説明付きのパースされたJSIC詳細エントリーを表す"""
     type: str  # "major", "middle", "minor", "detail"
     code: str  # "A", "01", "011", "0111", etc.
     name: str  # 名前
@@ -25,33 +25,33 @@ class JsicDetailEntry:
 
 
 class JsicDetailParser:
-    """Parser for JSIC detail pages that extracts classification entries with descriptions."""
+    """説明付きの分類エントリーを抽出するJSIC詳細ページのパーサー"""
 
     def __init__(self):
-        # Pattern for major classification: 大分類Ａ－農業、林業
-        # U+FF0D (－) full-width hyphen-minus
-        # U+002D (-) hyphen-minus
-        # U+2015 (―) horizontal bar
+        # 大分類のパターン: 大分類Ａ－農業、林業
+        # U+FF0D (－) 全角ハイフン・マイナス
+        # U+002D (-) ハイフン・マイナス
+        # U+2015 (―) 水平線
         self.major_pattern = re.compile(r'^大分類([A-TＡ-Ｔ])[－\-―](.+)$')
-        # Pattern for middle classification: 中分類01－農 業 (supports both half-width and full-width digits)
+        # 中分類のパターン: 中分類01－農 業 (半角と全角の数字に対応)
         self.middle_pattern = re.compile(r'^中分類([\d０-９]{2})[－\-―](.+)$')
-        # Pattern for 総説 section
+        # 総説セクションのパターン
         self.sousetsu_pattern = re.compile(r'^総\s*説\s*$')
-        # Pattern for 小分類 細分類 header
+        # 小分類 細分類 ヘッダーのパターン
         self.bunrui_header_pattern = re.compile(r'^小分類\s+細分類')
-        # Pattern for code at start of line (3 or 4 digits followed by space)
+        # 行頭のコードパターン（3桁または4桁の数字の後にスペース）
         self.code_pattern = re.compile(r'^([\d０-９]{3,4})\s+(.+)$')
-        # Pattern for example lines (starting with ○ or ×)
+        # 例示行のパターン（○ または × で始まる）
         self.example_pattern = re.compile(r'^[○×]')
 
     def parse_detail_pages(self, lines: List[str]) -> List[JsicDetailEntry]:
-        """Parse detail pages and return structured entries with descriptions.
+        """詳細ページをパースして説明付きの構造化されたエントリーを返す
 
         Args:
-            lines: List of text lines from pages 105-534
+            lines: 105-534ページからのテキスト行のリスト
 
         Returns:
-            List of JsicDetailEntry objects
+            JsicDetailEntryオブジェクトのリスト
         """
         entries = []
         current_entry: Optional[JsicDetailEntry] = None
@@ -66,23 +66,23 @@ class JsicDetailParser:
         while i < len(lines):
             line = lines[i].strip()
 
-            # Skip empty lines
+            # 空行をスキップ
             if not line:
                 i += 1
                 continue
 
-            # Check for major classification
+            # 大分類をチェック
             major_match = self.major_pattern.match(line)
             if major_match:
                 major_name = major_match.group(2).strip()
 
-                # Skip if this is a reference (contains ［ or 〔, or ends with "に分類される")
+                # 参照の場合はスキップ（［ または 〔 を含む、または "に分類される" で終わる）
                 if ('［' in major_name or '〔' in major_name or
                     major_name.endswith('に分類される。') or major_name.endswith('に分類される')):
                     i += 1
                     continue
 
-                # Save previous entry
+                # 前のエントリーを保存
                 if current_entry:
                     current_entry.description = self._clean_description('\n'.join(current_description_lines))
                     current_entry.included_examples = self._parse_included_examples(current_included_lines)
@@ -105,19 +105,18 @@ class JsicDetailParser:
                 i += 1
                 continue
 
-            # Check for middle classification
+            # 中分類をチェック
             middle_match = self.middle_pattern.match(line)
             if middle_match:
                 middle_name = middle_match.group(2).strip()
 
-                # Skip if this is a reference (contains multiple middle class numbers like "、52－")
-                # or contains brackets ［ or 〔
+                # 参照の場合はスキップ（複数の中分類番号 "、52－" を含む、または括弧 ［ や 〔 を含む）
                 if (re.search(r'、[\d０-９]{2}[－-]', middle_name) or
                     '［' in middle_name or '〔' in middle_name):
                     i += 1
                     continue
 
-                # Save previous entry
+                # 前のエントリーを保存
                 if current_entry:
                     current_entry.description = self._clean_description('\n'.join(current_description_lines))
                     current_entry.included_examples = self._parse_included_examples(current_included_lines)
@@ -140,16 +139,16 @@ class JsicDetailParser:
                 i += 1
                 continue
 
-            # Check for 総説
+            # 総説をチェック
             if self.sousetsu_pattern.match(line):
                 in_sousetsu = True
                 in_bunrui_section = False
                 i += 1
                 continue
 
-            # Check for 小分類 細分類 header
+            # 小分類 細分類 ヘッダーをチェック
             if self.bunrui_header_pattern.match(line):
-                # Save the major/middle entry with its description
+                # 大分類/中分類エントリーを説明とともに保存
                 if current_entry and in_sousetsu:
                     current_entry.description = self._clean_description('\n'.join(current_description_lines))
                     current_entry.included_examples = self._parse_included_examples(current_included_lines)
@@ -165,14 +164,14 @@ class JsicDetailParser:
                 i += 1
                 continue
 
-            # If we're in 総説, accumulate description for major/middle
+            # 総説にいる場合、大分類/中分類の説明を蓄積
             if in_sousetsu and current_entry:
-                # Skip header lines like "番 号 番 号"
+                # "番 号 番 号" のようなヘッダー行をスキップ
                 if not re.match(r'^[番号\s]+$', line):
-                    # Check if this is an example line
+                    # 例示行かチェック
                     if line.startswith('○'):
                         current_included_lines.append(line)
-                        # Check for continuation lines
+                        # 継続行をチェック
                         j = i + 1
                         while j < len(lines):
                             next_line = lines[j].strip()
@@ -213,24 +212,24 @@ class JsicDetailParser:
                 i += 1
                 continue
 
-            # Check for minor/detail classification (in bunrui section)
+            # 小分類/細分類をチェック（分類セクション内）
             if in_bunrui_section:
                 code_match = self.code_pattern.match(line)
                 if code_match:
                     code = self._normalize_digits(code_match.group(1))
                     name = code_match.group(2).strip()
 
-                    # Skip if this is a reference in description (starts with conjunctions/particles)
+                    # 説明内の参照の場合はスキップ（接続詞/助詞で始まる）
                     if (name.startswith('又は') or name.startswith('に、') or
                         name.startswith('に分類') or name.startswith('を除く') or
                         name.startswith('に設け')):
-                        # This is part of description text, not a new entry
+                        # これは説明文の一部であり、新しいエントリーではない
                         if current_entry:
                             current_description_lines.append(line)
                         i += 1
                         continue
 
-                    # Save previous entry
+                    # 前のエントリーを保存
                     if current_entry:
                         current_entry.description = self._clean_description('\n'.join(current_description_lines))
                         current_entry.included_examples = self._parse_included_examples(current_included_lines)
@@ -240,17 +239,17 @@ class JsicDetailParser:
                         current_included_lines = []
                         current_excluded_lines = []
 
-                    # Check if name continues on next line
-                    # Only for incomplete parenthesis or very short continuation
+                    # 名前が次の行に続くかチェック
+                    # 不完全な括弧または非常に短い継続の場合のみ
                     if i + 1 < len(lines):
                         next_line = lines[i + 1].strip()
 
-                        # Check if continuation is likely
+                        # 継続の可能性をチェック
                         is_continuation = False
 
-                        # Case 1: Incomplete parenthesis
+                        # ケース1: 不完全な括弧
                         if next_line and '（' in name and '）' not in name:
-                            # Next line should not be a description start
+                            # 次の行は説明の開始ではないはず
                             if (not self.code_pattern.match(next_line) and
                                 not self.example_pattern.match(next_line) and
                                 not next_line.startswith('主として') and
@@ -259,21 +258,21 @@ class JsicDetailParser:
                                 not next_line.startswith('×')):
                                 is_continuation = True
 
-                        # Case 2: Very short continuation (likely incomplete word like "造業")
+                        # ケース2: 非常に短い継続（"造業" のような不完全な単語の可能性）
                         elif (next_line and len(next_line) <= 10 and
                               not self.code_pattern.match(next_line) and
                               not self.example_pattern.match(next_line) and
                               not next_line.startswith('主として') and
                               not next_line.startswith('この')):
-                            # Name should not end with complete ending
+                            # 名前は完全な終わりで終わっていないはず
                             if name and not name.endswith(('業', '所', '類', '品', '等', '他', '外', '製造業', '工事業', 'サービス業')):
                                 is_continuation = True
 
                         if is_continuation:
                             name += next_line
-                            i += 1  # Skip the continuation line
+                            i += 1  # 継続行をスキップ
 
-                    # Determine type: 3-digit = minor, 4-digit = detail
+                    # タイプを判定: 3桁=小分類、4桁=細分類
                     entry_type = "minor" if len(code) == 3 else "detail"
 
                     current_entry = JsicDetailEntry(
@@ -285,9 +284,9 @@ class JsicDetailParser:
                     i += 1
                     continue
 
-                # If we have a current entry and this is not a code line, it's description or example
+                # 現在のエントリーがあり、これがコード行でない場合、説明または例示
                 if current_entry:
-                    # Check if this is an example line
+                    # 例示行かチェック
                     if line.startswith('○'):
                         current_included_lines.append(line)
                         # Check for continuation lines (next line doesn't start with ○, ×, or digit)
@@ -333,34 +332,34 @@ class JsicDetailParser:
 
             i += 1
 
-        # Save the last entry
+        # 最後のエントリーを保存
         if current_entry:
             current_entry.description = self._clean_description('\n'.join(current_description_lines))
             current_entry.included_examples = self._parse_included_examples(current_included_lines)
             current_entry.excluded_examples = self._parse_excluded_examples(current_excluded_lines)
             entries.append(current_entry)
 
-        # Post-process entries
+        # エントリーを後処理
         for entry in entries:
-            # Clean up Japanese names
+            # 日本語名をクリーンアップ
             entry.name = self._clean_japanese_name(entry.name)
 
-            # Remove (XX name) pattern from minor classification names
-            # Example: "管理、補助的経済活動を行う事業所（01農業）" -> "管理、補助的経済活動を行う事業所"
+            # 小分類名から (XX name) パターンを削除
+            # 例: "管理、補助的経済活動を行う事業所（01農業）" -> "管理、補助的経済活動を行う事業所"
             if entry.type == "minor":
-                # Pattern: （数字2桁 任意の文字）
+                # パターン: （数字2桁 任意の文字）
                 entry.name = re.sub(r'（\d{2}[^）]*）$', '', entry.name).strip()
 
         return entries
 
     def _normalize_alpha(self, char: str) -> str:
-        """Convert full-width alphabet to half-width."""
+        """全角アルファベットを半角に変換"""
         if 'Ａ' <= char <= 'Ｚ':
             return chr(ord(char) - ord('Ａ') + ord('A'))
         return char
 
     def _normalize_digits(self, text: str) -> str:
-        """Convert full-width digits to half-width."""
+        """全角数字を半角に変換"""
         result = []
         for char in text:
             if '０' <= char <= '９':
@@ -376,60 +375,60 @@ class JsicDetailParser:
         return text.strip()
 
     def _parse_included_examples(self, lines: List[str]) -> List[str]:
-        """Parse included example lines (○) into list of examples.
+        """含まれる例示行（○）をパースして例示のリストにする
 
         Args:
-            lines: List of lines starting with ○
+            lines: ○ で始まる行のリスト
 
         Returns:
-            List of example strings (split by ；)
+            例示文字列のリスト（；で分割）
         """
         examples = []
-        # Concatenate all lines and remove leading ○
+        # すべての行を連結し、先頭の ○ を削除
         full_text = ' '.join(lines)
         full_text = re.sub(r'^○', '', full_text).strip()
 
-        # Split by ；
+        # ； で分割
         items = [item.strip() for item in full_text.split('；') if item.strip()]
         examples.extend(items)
 
         return examples
 
     def _parse_excluded_examples(self, lines: List[str]) -> List[dict]:
-        """Parse excluded example lines (×) into list of examples with codes.
+        """除外例示行（×）をパースしてコード付きの例示のリストにする
 
         Args:
-            lines: List of lines starting with ×
+            lines: × で始まる行のリスト
 
         Returns:
-            List of dicts with 'name' and 'codes' keys (codes is a list)
+            'name' と 'codes' キーを持つ辞書のリスト（codes はリスト）
         """
         examples = []
-        # Concatenate all lines and remove leading ×
+        # すべての行を連結し、先頭の × を削除
         full_text = ' '.join(lines)
         full_text = re.sub(r'^×', '', full_text).strip()
 
-        # Split by ；
+        # ； で分割
         items = [item.strip() for item in full_text.split('；') if item.strip()]
 
         for item in items:
-            # Extract all 2-4 digit codes from the entire item (including nested brackets)
-            # They may be separated by "又は" or "、"
+            # 項目全体から2-4桁のコードをすべて抽出（ネストした括弧を含む）
+            # "又は" や "、" で区切られている可能性あり
             codes = re.findall(r'\d{2,4}', item)
 
-            # Extract name (part before the last bracket pair)
-            # Support both full-width ［］〔〕 and half-width []
+            # 名前を抽出（最後の括弧ペアの前の部分）
+            # 全角 ［］〔〕 と半角 [] の両方に対応
             match = re.match(r'^(.+?)[［\[〔]', item)
             if match:
                 name = match.group(1).strip()
             else:
-                # No brackets found - use entire item as name
+                # 括弧が見つからない - 項目全体を名前として使用
                 name = item.strip()
 
             if codes:
                 examples.append({"name": name, "codes": codes})
             else:
-                # No codes found - this might be a special case with text instead of code
+                # コードが見つからない - コードの代わりにテキストがある特殊なケースかもしれない
                 import sys
                 print(f"WARNING: 除外例のコードが見つかりません: {item}", file=sys.stderr)
                 examples.append({"name": name, "codes": []})
@@ -437,23 +436,23 @@ class JsicDetailParser:
         return examples
 
     def _clean_japanese_name(self, name: str) -> str:
-        """Clean Japanese name: remove spaces, normalize parentheses and nakaguro."""
-        # Remove all spaces
+        """日本語名をクリーンアップ: スペースを削除、括弧と中黒を正規化"""
+        # すべてのスペースを削除
         name = name.replace(' ', '').replace('　', '')
-        # Convert half-width parentheses to full-width
+        # 半角括弧を全角に変換
         name = name.replace('(', '（').replace(')', '）')
-        # Convert half-width nakaguro (･ U+FF65) to full-width (・ U+30FB)
+        # 半角中黒 (･ U+FF65) を全角 (・ U+30FB) に変換
         name = name.replace('･', '・')
-        # Convert full-width hyphen (－ U+FF0D) to long vowel (ー U+30FC)
+        # 全角ハイフン (－ U+FF0D) を長音 (ー U+30FC) に変換
         name = name.replace('－', 'ー')
-        # Convert half-width English letters to full-width
+        # 半角英字を全角に変換
         result = []
         for char in name:
             if 'A' <= char <= 'Z':
-                # Convert A-Z to Ａ-Ｚ (U+FF21 to U+FF3A)
+                # A-Z を Ａ-Ｚ (U+FF21 to U+FF3A) に変換
                 result.append(chr(ord(char) - ord('A') + ord('Ａ')))
             elif 'a' <= char <= 'z':
-                # Convert a-z to ａ-ｚ (U+FF41 to U+FF5A)
+                # a-z を ａ-ｚ (U+FF41 to U+FF5A) に変換
                 result.append(chr(ord(char) - ord('a') + ord('ａ')))
             else:
                 result.append(char)

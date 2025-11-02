@@ -39,7 +39,7 @@ class JsicPdfReader:
         self._extract_text()
 
     def _download_pdf(self):
-        """Download PDF from URL if not already cached."""
+        """キャッシュされていない場合、URLからPDFをダウンロード"""
         if self.pdf_path.exists():
             print(f"Using cached PDF: {self.pdf_path}")
             return
@@ -56,8 +56,8 @@ class JsicPdfReader:
         print(f"PDF saved to {self.pdf_path}")
 
     def _remove_page_number_noise(self, text: str) -> str:
-        """Remove '- ページ番号 -' pattern from text."""
-        # Remove patterns like "- 1 -", "- 2 -", "- 10 -" etc.
+        """テキストから '- ページ番号 -' パターンを削除"""
+        # "- 1 -", "- 2 -", "- 10 -" などのパターンを削除
         cleaned_text = re.sub(r'-\s*\d+\s*-', '', text)
         return cleaned_text
 
@@ -80,17 +80,17 @@ class JsicPdfReader:
         print(f"Extracted {len(self.pages_data)} pages")
 
     def read_page(self, page_number: int) -> list[str]:
-        """Read text from a specific page number.
+        """指定されたページ番号からテキストを読み込む
 
         Args:
-            page_number: The page number to read (1-indexed)
+            page_number: 読み込むページ番号（1から始まる）
 
         Returns:
-            List of text lines from the page
+            ページからのテキスト行のリスト
         """
         for page in self.pages_data:
             if page["page"] == page_number:
-                # Split content by newlines and return as list
+                # 改行で分割してリストとして返す
                 return page["content"].split('\n')
 
         raise ValueError(f"Page {page_number} not found")
