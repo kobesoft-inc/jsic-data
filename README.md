@@ -14,6 +14,65 @@
 
 **データソース**: [総務省 日本標準産業分類](https://www.soumu.go.jp/main_content/000941216.pdf)
 
+## リポジトリ
+
+このプロジェクトは以下のGitHubリポジトリで管理されています：
+
+https://github.com/kobesoft-inc/jsic
+
+## JSONデータの直接利用
+
+パーサーを実行せずに、生成済みのJSONデータを直接利用できます。以下のURLから必要な形式のファイルを取得してください：
+
+### 生成済みファイル
+
+| 形式 | サイズ | 説明 | ダウンロードURL |
+|------|--------|------|----------------|
+| **full** | 1.8MB | 完全なデータ（説明・例含む） | https://raw.githubusercontent.com/kobesoft-inc/jsic/main/jsic-full.json |
+| **simple** | 295KB | コードと名前のみ | https://raw.githubusercontent.com/kobesoft-inc/jsic/main/jsic-simple.json |
+| **en** | 439KB | コードと名前と英語名 | https://raw.githubusercontent.com/kobesoft-inc/jsic/main/jsic-en.json |
+
+### 使用例
+
+#### ブラウザから直接取得
+
+```javascript
+// JavaScriptでの使用例
+fetch('https://raw.githubusercontent.com/kobesoft-inc/jsic/main/jsic-simple.json')
+  .then(response => response.json())
+  .then(data => {
+    console.log(data.major_categories);
+  });
+```
+
+#### cURLでダウンロード
+
+```bash
+# シンプル版をダウンロード
+curl -O https://raw.githubusercontent.com/kobesoft-inc/jsic/main/jsic-simple.json
+
+# 完全版をダウンロード
+curl -O https://raw.githubusercontent.com/kobesoft-inc/jsic/main/jsic-full.json
+
+# 英語名付き版をダウンロード
+curl -O https://raw.githubusercontent.com/kobesoft-inc/jsic/main/jsic-en.json
+```
+
+#### Pythonでの使用例
+
+```python
+import requests
+
+# JSONデータを取得
+url = 'https://raw.githubusercontent.com/kobesoft-inc/jsic/main/jsic-simple.json'
+response = requests.get(url)
+jsic_data = response.json()
+
+# データの利用
+for major in jsic_data['major_categories']:
+    print(f"{major['code']}: {major['name']}")
+```
+
 ## インストール
 
 ### 必要な環境

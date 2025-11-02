@@ -25,9 +25,3 @@ Thumbs.db
 # Project specific
 tmp/
 *.pdf
-
-# Generated JSON files
-jsic-full.json
-jsic-simple.json
-jsic-en.json
-jsic.json
